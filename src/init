@@ -1,0 +1,109 @@
+#!/bin/sh
+
+die() {
+	if [ "$1" ]; then
+		echo "$1"
+	else
+		echo "Something went wrong"
+	fi
+	sh
+}
+
+# We do a lot of output parsing, expect it standardized
+LANG=C
+LC_ALL=C
+export LANG LC_ALL
+
+# Let stuff settle a little bit to make sure we have USB drive
+sleep 5
+
+mount -t proc none /proc
+mount -t sysfs none /sys
+
+mdev -s
+
+mkdir /mnt/SD
+mount /dev/mmcblk0p1 /mnt/SD || die "Can't mount SD card!"
+mkdir /mnt/tmp
+
+NEWOVERLAY=""
+
+# Repartition SD card on first boot
+OVERLAY="`blkid | sed -n 's|^\(/dev/[a-z0-9]*\):.*LABEL="pioverlay".*|\1|p'`"
+if [ -z "$OVERLAY" ]; then
+    echo "First run on this SD card - repartitioning"
+    mount -t tmpfs -o size=512M none /mnt/tmp
+    echo "Copying stuff temporally into RAM"
+    cp -r /mnt/SD/* /mnt/tmp || die "Can't backup old content, maybe too large?"
+    echo "Repartitioning - don't turn PiDrive off till done"
+    umount /mnt/SD
+    for i in i; do
+cat << EOF
+o
+n
+p
+1
+
++400M
+t
+c
+n
+p
+2
+
+
+w
+EOF
+    done | fdisk /dev/mmcblk0 > /dev/null
+	mdev -s
+    mkdir /mnt/root-ro
+    mkfs.vfat -n piboot    /dev/mmcblk0p1 || die "Can't recreate FAT partition"
+    mkfs.ext2 -L pioverlay /dev/mmcblk0p2 || die "Can't create overlay"
+    NEWOVERLAY="y"
+    mount /dev/mmcblk0p1 /mnt/SD || die "Can't mount new FAT"
+    cp -r /mnt/tmp/* /mnt/SD || die "Can't copy stuff back to new FAT"
+	sync
+    echo "Everything should be back in order"
+    umount /mnt/tmp
+fi
+
+# Mount everything
+mkdir -p /mnt/root-ro
+mount -o loop /mnt/SD/rootfs.squash /mnt/root-ro || die "Can't mount rootfs.squash"
+mkdir -p /mnt/root-rw
+mount         "$OVERLAY"            /mnt/root-rw || die "Can't mount overlay"
+
+# If there is a backup, use it
+HDD="`blkid | sed -n 's|^\(/dev/sd[a-z][1-9]\):.*LABEL="pidata".*|\1|p'`"
+if [ "$HDD" ]; then
+	mkdir -p /mnt/hdd
+	mount "$HDD" /mnt/hdd
+	if [ \! -d /mnt/root-rw/overlay ] && [ -d /mnt/hdd/overlay ]; then
+		echo "Backup on HDD found, restoring it"
+		cp -r --preserve=all /mnt/hdd/overlay /mnt/root-rw/
+	fi
+	umount -l /mnt/hdd
+else
+	echo "No HDD found"
+fi
+
+# Continue with mounting
+mkdir -p /mnt/root
+mkdir -p /mnt/root-rw/overlay
+mkdir -p /mnt/root-rw/tmp
+mount -t overlay -o \
+	lowerdir=/mnt/root-ro,upperdir=/mnt/root-rw/overlay,workdir=/mnt/root-rw/tmp \
+	overlay /mnt/root || die "Can't mount final root"
+mkdir -p /mnt/root/mnt/overlay
+mkdir -p /mnt/root/mnt/SD
+if [ -f /mnt/SD/modules.squashfs ]; then
+    mkdir -p /mnt/root/lib/modules/`uname -s`
+	mount -o loop /mnt/SD/modules.squash /mnt/root/lib/modules/`uname -s`
+fi
+mount -o bind /mnt/root-rw/overlay /mnt/root/mnt/overlay
+mount -o bind /mnt/SD              /mnt/root/mnt/SD
+
+# Boot
+exec chroot /mnt/root /sbin/init "$@" <dev/console >dev/console 2>&1 || die "Init failed"
+echo "Can't get init on rootfs running!!!"
+sleep 10

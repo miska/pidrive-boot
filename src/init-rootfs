@@ -1,0 +1,31 @@
+#!/bin/bash
+rm -rf build/opensuse
+mkdir -p build/opensuse
+tar -C build/opensuse -xjvf `pwd`/build/opensuse.tbz
+cp /usr/bin/qemu-arm build/opensuse/usr/bin
+cat << EOF | chroot build/opensuse /bin/bash
+hostnamectl set-hostname pidrive
+zypper ref
+zypper ar -f obs://home:-miska-:pidrive/openSUSE_13.2 pidrive
+zypper ar -f http://pmbs.links2linux.de:82/Essentials/openSUSE_13.2_ARM packman
+zypper --gpg-auto-import-keys ref
+zypper -n up
+zypper -n in nginx php7-fpm php7-apcu xfsprogs fbi ffmpeg
+zypper -n rm yast2-firstboot
+ln -s /etc/systemd/system/background.service /etc/systemd/system/multi-user.target.wants/background.service
+EOF
+cat << EOF >> build/opensuse/etc/fstab
+tmpfs   /run              tmpfs   noauto          0 0
+tmpfs   /tmp              tmpfs   nodev,nosuid,size=100M 0 0
+EOF
+cp src/background.png build/opensuse/etc
+cp src/background.service build/opensuse/etc/systemd/system
+rm -f build/opensuse/usr/bin/qemu-arm build/opensuse/etc/sysconfig/firstboot
+sed -i 's|^root.*|root:$6$YBYgFvqQ$TDGt5IcJUZxiYS1vgtj5bF5ZKcdePQOmSkBH7Q5/o42k6ohdM3333hVkhP06ZVqkNx2R4/zHgxFokqri1EF5r0:16808::::::|' build/opensuse/etc/shadow
+cat << EOF >> build/opensuse/etc/systemd/journald.conf
+Storage=volatile
+RuntimeMaxUse=25M
+EOF
+rm -f SD/rootfs.squash
+mksquashfs build/opensuse SD/rootfs.squash -comp xz -Xbcj arm
+# rm -rf build/opensuse

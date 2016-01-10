@@ -1,0 +1,10 @@
+[Unit]
+Description=Backgroung Image
+After=network.target network-online.target
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/fbi -T 1  -nocomments  -a -noverbose /etc/background.png
+
+[Install]
+WantedBy=multi-user.target
