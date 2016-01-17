@@ -1,0 +1,10 @@
+PiDrive image
+=============
+
+This is simple repo that contains Makefile to build and prepare everything you
+need to get your PiDrive running. It has some nontrivial dependencies, like
+git, qemu-user for arm, squashfs-tools and you have to be able to get root.
+Maybe more, feel free to send a pull request with fixed documentation.
+
+Simply checkout the repo, run make and copy content of SD directory to your SD
+card. Plug it into your PiDrive and you should be good to go.
