@@ -1,25 +1,44 @@
 #!/bin/bash
 rm -rf build/opensuse
 mkdir -p build/opensuse
-tar -C build/opensuse -xjvf `pwd`/build/opensuse.tbz
+tar -C build/opensuse -xjvf `pwd`/download/opensuse.tbz
 cp /usr/bin/qemu-arm build/opensuse/usr/bin
+echo 'pidrive.site' > build/opensuse/etc/hostname
+cp src/background.png build/opensuse/etc
+cp src/background.service build/opensuse/etc/systemd/system
+cp src/background.sh build/opensuse/usr/bin
+chmod a+rx build/opensuse/usr/bin/background.sh
+chown root build/opensuse/usr/bin/background.sh build/opensuse/etc/systemd/system/background.service build/opensuse/etc/background.png
+sed -i 's|#.*solver.onlyRequires = false|solver.onlyRequires = true|' build/opensuse/etc/zypp/zypp.conf
+mkdir -p build/opensuse/srv/www
+cp -r download/owncloud build/opensuse/srv/www
 cat << EOF | chroot build/opensuse /bin/bash
-hostnamectl set-hostname pidrive
 zypper ref
 zypper ar -f obs://home:-miska-:pidrive/openSUSE_13.2 pidrive
+zypper ar -f http://download.owncloud.org/download/repositories/stable/openSUSE_13.2/ce:stable.repo
 zypper ar -f http://pmbs.links2linux.de:82/Essentials/openSUSE_13.2_ARM packman
 zypper --gpg-auto-import-keys ref
 zypper -n up
-zypper -n in nginx php7-fpm php7-apcu xfsprogs fbi ffmpeg
+for i in nginx ImageMagick iproute2 xfsprogs fbi ffmpeg omxplayer miniupnpc miredo-client \
+"php7-fpm php7-apcu php7-bz2 php7-ctype php7-curl php7-dba php7-dom php7-exif
+php7-fileinfo php7-gd php7-iconv php7-intl php7-json php7-mbstring php7-mcrypt
+php7-odbc php7-opcache php7-pear php7-sqlite php7-xmlreader php7-xmlrpc
+php7-xmlwriter php7-zip php7-zlib"; do
+    zypper -n in --no-recommends \$i
+done
 zypper -n rm yast2-firstboot
-ln -s /etc/systemd/system/background.service /etc/systemd/system/multi-user.target.wants/background.service
+ln -s /etc/systemd/system/background.service /etc/systemd/system/multi-user.target.wants
+ln -s /usr/lib/nginx.service /etc/systemd/system/multi-user.target.wants
+ln -s /usr/lib/php-fpm.service /etc/systemd/system/multi-user.target.wants
+chown -R wwwrun:www /srv/www
 EOF
 cat << EOF >> build/opensuse/etc/fstab
 tmpfs   /run              tmpfs   noauto          0 0
 tmpfs   /tmp              tmpfs   nodev,nosuid,size=100M 0 0
 EOF
-cp src/background.png build/opensuse/etc
-cp src/background.service build/opensuse/etc/systemd/system
+cp src/nginx.conf build/opensuse/etc/nginx/nginx.conf
+ln -s php-fpm.conf.default build/opensuse/etc/php7/fpm/php-fpm.conf
+cp src/www.conf build/opensuse/etc/php7/fpm/php-fpm.d/www.conf
 rm -f build/opensuse/usr/bin/qemu-arm build/opensuse/etc/sysconfig/firstboot
 sed -i 's|^root.*|root:$6$YBYgFvqQ$TDGt5IcJUZxiYS1vgtj5bF5ZKcdePQOmSkBH7Q5/o42k6ohdM3333hVkhP06ZVqkNx2R4/zHgxFokqri1EF5r0:16808::::::|' build/opensuse/etc/shadow
 cat << EOF >> build/opensuse/etc/systemd/journald.conf
