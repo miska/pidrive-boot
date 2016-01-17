@@ -19,7 +19,7 @@ zypper ar -f http://download.owncloud.org/download/repositories/stable/openSUSE_
 zypper ar -f http://pmbs.links2linux.de:82/Essentials/openSUSE_13.2_ARM packman
 zypper --gpg-auto-import-keys ref
 zypper -n up
-for i in nginx ImageMagick iproute2 xfsprogs fbi ffmpeg omxplayer miniupnpc miredo-client \
+for i in nginx ImageMagick iproute2 xfsprogs fbi ffmpeg omxplayer miniupnpc miredo-client sudo \
 "php7-fpm php7-apcu php7-bz2 php7-ctype php7-curl php7-dba php7-dom php7-exif
 php7-fileinfo php7-gd php7-iconv php7-intl php7-json php7-mbstring php7-mcrypt
 php7-odbc php7-opcache php7-pear php7-sqlite php7-xmlreader php7-xmlrpc
@@ -27,6 +27,7 @@ php7-xmlwriter php7-zip php7-zlib"; do
     zypper -n in --no-recommends \$i
 done
 zypper -n rm yast2-firstboot
+cp /srv/www/owncloud/apps/ocipv6/ocipv6.sudo /etc/sudoers.d
 ln -s /etc/systemd/system/background.service /etc/systemd/system/multi-user.target.wants
 ln -s /usr/lib/nginx.service /etc/systemd/system/multi-user.target.wants
 ln -s /usr/lib/php-fpm.service /etc/systemd/system/multi-user.target.wants
