@@ -19,7 +19,7 @@ zypper ar -f http://download.owncloud.org/download/repositories/stable/openSUSE_
 zypper ar -f http://pmbs.links2linux.de:82/Essentials/openSUSE_13.2_ARM packman
 zypper --gpg-auto-import-keys ref
 zypper -n up
-for i in nginx ImageMagick iproute2 xfsprogs fbi ffmpeg omxplayer miniupnpc miredo-client sudo \
+for i in nginx ImageMagick iproute2 xfsprogs fbi ffmpeg omxplayer miniupnpc miredo-client sudo screen ifplugd \
 "php7-fpm php7-apcu php7-bz2 php7-ctype php7-curl php7-dba php7-dom php7-exif
 php7-fileinfo php7-gd php7-iconv php7-intl php7-json php7-mbstring php7-mcrypt
 php7-odbc php7-opcache php7-pear php7-sqlite php7-xmlreader php7-xmlrpc
@@ -42,6 +42,7 @@ ln -s php-fpm.conf.default build/opensuse/etc/php7/fpm/php-fpm.conf
 cp src/www.conf build/opensuse/etc/php7/fpm/php-fpm.d/www.conf
 rm -f build/opensuse/usr/bin/qemu-arm build/opensuse/etc/sysconfig/firstboot
 sed -i 's|^root.*|root:$6$YBYgFvqQ$TDGt5IcJUZxiYS1vgtj5bF5ZKcdePQOmSkBH7Q5/o42k6ohdM3333hVkhP06ZVqkNx2R4/zHgxFokqri1EF5r0:16808::::::|' build/opensuse/etc/shadow
+sed -i 's|^\(video:.*\):$|\1:wwwrun|' build/opensuse/etc/shadow
 cat << EOF >> build/opensuse/etc/systemd/journald.conf
 Storage=volatile
 RuntimeMaxUse=25M

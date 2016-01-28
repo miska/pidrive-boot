@@ -11,14 +11,16 @@ all: SD/all
 SD/all: SD/kernel7.img SD/bcm2709-rpi-2-b.dtb SD/config.txt SD/start.elf SD/modules.squash SD/rootfs.squash
 
 download/owncloud/index.php:
-	cd download;\
-	git clone https://github.com/owncloud/core.git owncloud;\
-	cd owncloud;\
-	git checkout -b stable8.2 origin/stable8.2;\
-	git submodule init;\
-	git submodule update;\
-	cd apps;\
-	git clone https://github.com/miska/ocipv6.git
+	mkdir -p download;\
+	cd download && \
+	git clone https://github.com/owncloud/core.git owncloud &&\
+	cd owncloud &&\
+	git checkout -b stable8.2 origin/stable8.2 &&\
+	git submodule init &&\
+	git submodule update &&\
+	cd apps &&\
+	git clone https://github.com/miska/ocipv6.git && \
+	git clone https://github.com/miska/octv.git
 
 download/opensuse.tbz:
 	wget -O $@ http://download.opensuse.org/ports/armv7hl/distribution/13.2/appliances/openSUSE-13.2-ARM-JeOS.armv7-rootfs.armv7l-Current.tbz
